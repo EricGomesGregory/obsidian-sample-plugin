@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf } from 'obsidian';
 
 // Remember to rename these classes and interfaces!
 
@@ -10,16 +10,20 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 	mySetting: 'default'
 }
 
-export default class MyPlugin extends Plugin {
+export default class CyberpunkRedPlugin extends Plugin {
 	settings: MyPluginSettings;
 
 	async onload() {
 		await this.loadSettings();
 
+		this.registerView(
+      "cyberpunk-view",
+      (leaf) => new CyberpunkView(leaf)
+    );
+
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+		const ribbonIconEl = this.addRibbonIcon('dice', 'Cyberpunk RED', (evt: MouseEvent) => {
+			this.activateView();
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -30,12 +34,13 @@ export default class MyPlugin extends Plugin {
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
+			id: 'open-cyberpunk-red-modal',
+			name: 'Open Cyberpunk RED Modal (simple)',
 			callback: () => {
-				new SampleModal(this.app).open();
+				new CyberpunkModal(this.app).open();
 			}
 		});
+		
 		// This adds an editor command that can perform some operation on the current editor instance
 		this.addCommand({
 			id: 'sample-editor-command',
@@ -47,8 +52,8 @@ export default class MyPlugin extends Plugin {
 		});
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
 		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
+			id: 'open-cyberpunk-red-modal',
+			name: 'Open Cyberpunk RED Modal (complex)',
 			checkCallback: (checking: boolean) => {
 				// Conditions to check
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -56,7 +61,7 @@ export default class MyPlugin extends Plugin {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
-						new SampleModal(this.app).open();
+						new CyberpunkModal(this.app).open();
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
@@ -74,6 +79,13 @@ export default class MyPlugin extends Plugin {
 			console.log('click', evt);
 		});
 
+		//CodeBlock Processors
+		this.registerMarkdownCodeBlockProcessor("cpr-npc-mook", (source, element, context) => {
+			console.log(source)
+			const data = source.split("\n")
+			console.log(data)
+		});
+
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
@@ -89,9 +101,29 @@ export default class MyPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+	async activateView() {
+    const { workspace } = this.app;
+
+    let leaf: WorkspaceLeaf | null = null;
+    const leaves = workspace.getLeavesOfType("cyberpunk-view");
+
+    if (leaves.length > 0) {
+      // A leaf with our view already exists, use that
+      leaf = leaves[0];
+    } else {
+      // Our view could not be found in the workspace, create a new leaf
+      // in the right sidebar for it
+      leaf = workspace.getRightLeaf(false);
+      await leaf.setViewState({ type: "cyberpunk-view", active: true });
+    }
+
+    // "Reveal" the leaf in case it is in a collapsed sidebar
+    workspace.revealLeaf(leaf);
+  }
 }
 
-class SampleModal extends Modal {
+class CyberpunkModal extends Modal {
 	constructor(app: App) {
 		super(app);
 	}
@@ -107,10 +139,34 @@ class SampleModal extends Modal {
 	}
 }
 
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+class CyberpunkView extends View {
+	constructor(leaf: WorkspaceLeaf) {
+    super(leaf);
+  }
 
-	constructor(app: App, plugin: MyPlugin) {
+  getViewType() {
+    return "cyberpunk-view";
+  }
+
+  getDisplayText() {
+    return "Cyberpunk view";
+  }
+
+  async onOpen() {
+    const container = this.containerEl.children[1];
+    container.empty();
+    container.createEl("h4", { text: "Cyberpunk view" });
+  }
+
+  async onClose() {
+    // Nothing to clean up.
+  }
+}
+
+class SampleSettingTab extends PluginSettingTab {
+	plugin: CyberpunkRedPlugin;
+
+	constructor(app: App, plugin: CyberpunkRedPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
