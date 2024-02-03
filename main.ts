@@ -1,4 +1,7 @@
-import { App, Editor, MarkdownView, Modal, Plugin, PluginSettingTab, Setting, View, WorkspaceLeaf } from 'obsidian';
+import { App, Command, Editor, MarkdownPostProcessorContext, MarkdownView, Modal, Plugin, PluginSettingTab, Setting, TFile, View, WorkspaceLeaf, parseYaml, stringifyYaml } from 'obsidian';
+import { createRoot } from 'react-dom/client';
+import NpcStatblock from 'src/components/NpcStatblock';
+import { INpcData, createNpcData } from 'src/types/Npc';
 
 // Remember to rename these classes and interfaces!
 
@@ -70,6 +73,19 @@ export default class CyberpunkRedPlugin extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id:'insert-npc-statblock',
+			name:'Insert NPC Statblock',
+			editorCallback: () => {
+				const command: Command = {
+					id:'insert-npc-statblock-command',
+					name:'Command: Insert NPC Statblock'
+				}
+
+				this.insertNpcStatblock(command)
+			}
+		});
+
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 
@@ -80,14 +96,47 @@ export default class CyberpunkRedPlugin extends Plugin {
 		});
 
 		//CodeBlock Processors
-		this.registerMarkdownCodeBlockProcessor("cpr-npc-mook", (source, element, context) => {
-			console.log(source)
-			const data = source.split("\n")
-			console.log(data)
+		this.registerMarkdownCodeBlockProcessor("cpr-npc", (source, element, context) => {
+			const data = parseYaml(source) as INpcData
+			
+			const root = createRoot(element)
+			const statblock = new NpcStatblock(data).render()
+			root.render(statblock)
 		});
 
+		this.registerMarkdownPostProcessor((element, context) => {
+			const results = element.querySelectorAll('span.internal-embed');
+			results.forEach((result) => {
+				console.log(result)
+				const src = result.getAttribute('src')
+				console.log(src)
+				const files = this.app.vault.getFiles()
+				console.log(files.length)
+				files.forEach(file => console.log(file.name))
+				const file = files.find(file => file.name == src)
+				if (file) {
+					this.readData(file, element, context)
+				}
+			})
+		})
+		
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+	}
+
+
+	async readData(file: TFile, element: HTMLElement, context: MarkdownPostProcessorContext) {
+		const raw = await this.app.vault.read(file)
+		try {
+			const data = parseYaml(raw) as INpcData
+
+			const root = createRoot(element)
+			const statblock = new NpcStatblock(data).render()
+			root.render(statblock)
+
+		} catch (exception) {
+			console.log(exception)
+		}
 	}
 
 	onunload() {
@@ -121,6 +170,20 @@ export default class CyberpunkRedPlugin extends Plugin {
     // "Reveal" the leaf in case it is in a collapsed sidebar
     workspace.revealLeaf(leaf);
   }
+
+	insertNpcStatblock(command: Command) {
+		const editor = this.app.workspace.activeEditor?.editor;
+		if (editor) {
+			const cursor = editor.getCursor()
+			const line = cursor.line
+			const position = { line, ch:0}
+
+			const npc = createNpcData()
+
+			const templateCode = `\`\`\`cpr-npc\n${stringifyYaml(npc)}\n\`\`\``;
+			editor.replaceRange(templateCode, position, position)
+		}
+	}
 }
 
 class CyberpunkModal extends Modal {
