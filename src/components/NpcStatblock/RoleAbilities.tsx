@@ -2,9 +2,9 @@ import { IRole, IRoleAbility } from "src/types/Npc";
 
 
 
-function Ability(ability: IRoleAbility) {
+function Ability(ability: IRoleAbility, index: number) {
   return (
-    <div>
+    <div key={`ability-${index}`}>
       <b> {ability.name} </b>
       <div>
         {ability.description}
@@ -19,7 +19,7 @@ export function RoleAbility(role: IRole) {
     <div>
       <b> ROLE ABILITIES </b>
       <div>
-        {role.abilities.map(ability => Ability(ability))}
+        {role.abilities.map((ability, i) => Ability(ability, i))}
       </div>
     </div>
   )

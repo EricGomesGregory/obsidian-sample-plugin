@@ -27,16 +27,16 @@ export function Stats(stats: IStats) {
       <table style={table}>
         <thead>
           <tr>
-            { headers.map( name => 
-                <th style={cell}> {name} </th>
+            { headers.map((name,i) => 
+                <th key={`header-${i}`} style={cell}> {name} </th>
               )
             }
           </tr>
         </thead>
         <tbody>
           <tr>
-            { scores.map( score =>
-                <td style={cell}> {score} </td>
+            { scores.map((score, i) =>
+                <td key={`cell-${i}`} style={cell}> {score} </td>
               )
             }
           </tr>
@@ -53,16 +53,16 @@ export function Stats(stats: IStats) {
       <table style={table}>
         <thead>
           <tr>
-            { headers.map( name => 
-                <th style={cell}> {name} </th>
+            { headers.map((name, i) => 
+                <th key={`header-${i}`} style={cell}> {name} </th>
               )
             }
           </tr>
         </thead>
         <tbody>
           <tr>
-            { scores.map( score =>
-                <td style={cell}> {score} </td>
+            { scores.map((score, i) =>
+                <td key={`cell-${i}`} style={cell}> {score} </td>
               )
             }
           </tr>
